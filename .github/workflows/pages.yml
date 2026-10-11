@@ -33,6 +33,8 @@ jobs:
         run: |
           source /tmp/emsdk/emsdk_env.sh
           em++ core/postcard.cpp -std=c++20 -O3 --no-entry -sMODULARIZE=1 -sEXPORT_ES6=1 -sENVIRONMENT=web -sFILESYSTEM=0 -sEXPORTED_FUNCTIONS='["_pc_to_mm","_pc_pixels","_pc_cover_scale","_pc_effective_dpi"]' -o docs/core.generated.js
+      - name: Version offline resources for this release
+        run: sed -i "s/postcard-studio-v3/postcard-studio-${GITHUB_SHA}/" docs/sw.js
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with:
