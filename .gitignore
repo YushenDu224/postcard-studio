@@ -1,0 +1,6 @@
+build/
+node_modules/
+artifacts/
+docs/core.generated.js
+docs/core.generated.wasm
+*.postcard.json
