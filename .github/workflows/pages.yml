@@ -1,0 +1,49 @@
+name: Build C++ core and publish Pages
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+concurrency:
+  group: pages
+  cancel-in-progress: false
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Test web model and native C++ core
+        run: |
+          npm test
+          g++ -std=c++20 -Wall -Wextra -pedantic -Icore core/postcard.cpp tests/core_test.cpp -o /tmp/postcard-tests
+          /tmp/postcard-tests
+      - name: Install official Emscripten SDK
+        run: |
+          git clone --depth 1 https://github.com/emscripten-core/emsdk.git /tmp/emsdk
+          /tmp/emsdk/emsdk install latest
+          /tmp/emsdk/emsdk activate latest
+      - name: Compile independent C++ core for browsers
+        shell: bash
+        run: |
+          source /tmp/emsdk/emsdk_env.sh
+          em++ core/postcard.cpp -std=c++20 -O3 --no-entry -sMODULARIZE=1 -sEXPORT_ES6=1 -sENVIRONMENT=web -sFILESYSTEM=0 -sEXPORTED_FUNCTIONS='["_pc_to_mm","_pc_pixels","_pc_cover_scale","_pc_effective_dpi"]' -o docs/core.generated.js
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: docs
+  deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+      - name: Deploy
+        id: deployment
+        uses: actions/deploy-pages@v4
